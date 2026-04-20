@@ -103,6 +103,9 @@
       '<div class="memory-grid" id="mg-grid"></div>';
 
     renderCards();
+
+    // Speak intro
+    window.App.autoSpeak('Hukommelsesspil! Find de matchende par. Tryk p\u00e5 to kort for at vende dem.');
   }
 
   function renderCards() {

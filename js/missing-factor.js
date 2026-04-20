@@ -84,6 +84,15 @@
 
     // Auto-focus the input
     setTimeout(function () { input.focus(); }, 50);
+
+    // Speak the question
+    var spokenText;
+    if (state.hideFirst) {
+      spokenText = 'Hvilket tal gange ' + q.b + ' giver ' + q.answer + '?';
+    } else {
+      spokenText = q.a + ' gange hvilket tal giver ' + q.answer + '?';
+    }
+    window.App.autoSpeak(spokenText);
   }
 
   function handleSubmit(e) {

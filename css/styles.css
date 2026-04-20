@@ -281,6 +281,28 @@ body {
 /* ---------- Game Top Bar ---------- */
 .game-topbar {
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.voice-toggle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice-toggle input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
 }
 
 /* ---------- Game Screen ---------- */

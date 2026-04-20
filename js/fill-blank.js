@@ -61,6 +61,9 @@
 
     // Auto-focus the input
     setTimeout(function () { input.focus(); }, 50);
+
+    // Speak the question
+    window.App.autoSpeak('Hvad er ' + q.a + ' gange ' + q.b + '?');
   }
 
   function handleSubmit(e) {

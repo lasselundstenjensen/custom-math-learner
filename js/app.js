@@ -27,6 +27,64 @@ const footerMessages = [
   'Du er en sand regnehelt!'
 ];
 
+// --------------- TTS (shared) ---------------
+window.AppState.autoVoice = true;
+
+(function () {
+  var cachedVoice = null;
+
+  function findDanishVoice() {
+    if (cachedVoice) return cachedVoice;
+    var voices = speechSynthesis.getVoices();
+    var candidates = [];
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (v.lang && (v.lang === 'da-DK' || v.lang === 'da_DK' || v.lang === 'da')) {
+        candidates.push(v);
+      }
+    }
+    if (candidates.length === 0) return null;
+    // Prefer macOS "Sara" voice
+    for (var j = 0; j < candidates.length; j++) {
+      if (candidates[j].name && candidates[j].name.indexOf('Sara') !== -1) {
+        cachedVoice = candidates[j];
+        return cachedVoice;
+      }
+    }
+    // Prefer local (native) voices over network
+    for (var k = 0; k < candidates.length; k++) {
+      if (candidates[k].localService) {
+        cachedVoice = candidates[k];
+        return cachedVoice;
+      }
+    }
+    cachedVoice = candidates[0];
+    return cachedVoice;
+  }
+
+  window.AppSpeak = function (text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'da-DK';
+    u.rate = 0.9;
+    var voice = findDanishVoice();
+    if (voice) u.voice = voice;
+    speechSynthesis.speak(u);
+  };
+
+  // Preload voices
+  if ('speechSynthesis' in window) {
+    speechSynthesis.getVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = function () {
+        cachedVoice = null;
+        speechSynthesis.getVoices();
+      };
+    }
+  }
+})();
+
 // --------------- App Controller ---------------
 window.App = {
 
@@ -165,8 +223,17 @@ window.App = {
     main.innerHTML =
       '<div class="game-topbar">' +
         '<button class="back-btn" id="game-back-btn">&#8592; Tilbage</button>' +
+        '<label class="voice-toggle">' +
+          '<input type="checkbox" id="auto-voice-chk" ' + (window.AppState.autoVoice ? 'checked' : '') + ' /> ' +
+          '\ud83d\udd0a Opl\u00e6sning' +
+        '</label>' +
       '</div>' +
       '<div class="game-screen" id="game-container"></div>';
+
+    document.getElementById('auto-voice-chk').addEventListener('change', function () {
+      window.AppState.autoVoice = this.checked;
+      if (!this.checked && 'speechSynthesis' in window) speechSynthesis.cancel();
+    });
 
     document.getElementById('game-back-btn').addEventListener('click', function () {
       // Cleanup current game mode
@@ -341,6 +408,15 @@ window.App = {
     }
 
     return questions;
+  },
+
+  // ========== VOICE ==========
+
+  /** Speak text if auto-voice is enabled */
+  autoSpeak(text) {
+    if (window.AppState.autoVoice && text) {
+      window.AppSpeak(text);
+    }
   },
 
   // ========== FEEDBACK ==========

@@ -97,6 +97,9 @@
     if (input) {
       addListener(input, 'keydown', handleKeyDown);
     }
+
+    // Speak intro
+    window.App.autoSpeak('Tidsudfordring! Svar s\u00e5 hurtigt du kan. Du har 60 sekunder.');
   }
 
   function showQuestion() {

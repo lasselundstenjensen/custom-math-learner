@@ -120,6 +120,9 @@
     buttons.forEach(function (btn) {
       addListener(btn, 'click', handleChoice);
     });
+
+    // Speak the question
+    window.App.autoSpeak('Hvad er ' + q.a + ' gange ' + q.b + '? V\u00e6lg det rigtige svar.');
   }
 
   function handleChoice(e) {

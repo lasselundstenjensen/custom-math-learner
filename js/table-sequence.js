@@ -133,6 +133,9 @@
       });
       setTimeout(function () { input.focus(); }, 50);
     }
+
+    // Speak the question
+    window.App.autoSpeak(round.table + '-tabellen. Hvilket tal mangler? Pladsen er nummer ' + round.missingPos + '.');
   }
 
   function handleSubmit(e) {

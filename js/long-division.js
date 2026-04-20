@@ -25,7 +25,6 @@
     container: null,
     timers: [],
     listeners: [],
-    autoVoice: false,
     difficulty: 'easy' // 'easy' = 1-digit divisor, 'hard' = 2-digit divisor
   };
 
@@ -46,59 +45,10 @@
     state.listeners.push({ el: el, type: type, fn: fn });
   }
 
-  /* ---- TTS ---- */
-
-  var cachedDanishVoice = null;
-
-  function findDanishVoice() {
-    if (cachedDanishVoice) return cachedDanishVoice;
-    var voices = speechSynthesis.getVoices();
-    var candidates = [];
-    for (var i = 0; i < voices.length; i++) {
-      var v = voices[i];
-      if (v.lang && (v.lang === 'da-DK' || v.lang === 'da_DK' || v.lang === 'da')) {
-        candidates.push(v);
-      }
-    }
-    if (candidates.length === 0) return null;
-    // Prefer a voice whose name contains "Sara" (macOS native Danish) or is marked local
-    for (var j = 0; j < candidates.length; j++) {
-      if (candidates[j].name && candidates[j].name.indexOf('Sara') !== -1) {
-        cachedDanishVoice = candidates[j];
-        return cachedDanishVoice;
-      }
-    }
-    // Prefer localService voices (native, not network-based)
-    for (var k = 0; k < candidates.length; k++) {
-      if (candidates[k].localService) {
-        cachedDanishVoice = candidates[k];
-        return cachedDanishVoice;
-      }
-    }
-    cachedDanishVoice = candidates[0];
-    return cachedDanishVoice;
-  }
+  /* ---- TTS (uses shared App service) ---- */
 
   function speak(text) {
-    if (!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'da-DK';
-    u.rate = 0.9;
-    var voice = findDanishVoice();
-    if (voice) u.voice = voice;
-    speechSynthesis.speak(u);
-  }
-
-  // Preload voices (some browsers load them asynchronously)
-  if ('speechSynthesis' in window) {
-    speechSynthesis.getVoices();
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = function () {
-        cachedDanishVoice = null; // re-detect after voices load
-        speechSynthesis.getVoices();
-      };
-    }
+    window.AppSpeak(text);
   }
 
   /* ---- Problem generation ---- */
@@ -182,9 +132,9 @@
         }
         return 'Nu har vi tallet ' + iter.currentNumber + '. Hvor mange gange kan ' + state.divisor + ' g\u00e5 op i ' + iter.currentNumber + '?';
       case 'multiply':
-        return 'Du skrev ' + iter.quotientDigit + ' \u2014 godt! Nu skal vi gange: Hvad er ' + iter.quotientDigit + ' \u00d7 ' + state.divisor + '?';
+        return 'Du skrev ' + iter.quotientDigit + ' \u2014 godt! Nu skal vi gange: Hvad er ' + iter.quotientDigit + ' gange ' + state.divisor + '?';
       case 'subtract':
-        return 'Godt! Nu tr\u00e6kker vi fra: Hvad er ' + iter.currentNumber + ' \u2212 ' + iter.product + '?';
+        return 'Godt! Nu tr\u00e6kker vi fra: Hvad er ' + iter.currentNumber + ' minus ' + iter.product + '?';
       case 'bringdown':
         var nextDigit = state.digits[state.currentIter + 1];
         var newNum = iter.remainder * 10 + nextDigit;
@@ -351,12 +301,6 @@
             '<p id="ld-explain-text">' + explanation + '</p>' +
             '<button class="ld-speak-btn" id="ld-voice-btn" title="H\u00f8r forklaring">\ud83d\udd0a</button>' +
           '</div>' +
-          '<div class="ld-voice-toggle-row">' +
-            '<label class="ld-voice-toggle">' +
-              '<input type="checkbox" id="ld-auto-voice" ' + (state.autoVoice ? 'checked' : '') + ' /> ' +
-              'Automatisk opl\u00e6sning' +
-            '</label>' +
-          '</div>' +
           '<div class="ld-input-box">' + inputHtml + '</div>' +
           '<div id="ld-feedback" style="text-align:center;margin-top:10px;font-size:1.1rem;font-weight:700;min-height:1.4em;"></div>' +
         '</div>' +
@@ -383,9 +327,6 @@
     var voiceBtn = document.getElementById('ld-voice-btn');
     if (voiceBtn) addListener(voiceBtn, 'click', function () { speak(explanation); });
 
-    var autoChk = document.getElementById('ld-auto-voice');
-    if (autoChk) addListener(autoChk, 'change', function () { state.autoVoice = autoChk.checked; });
-
     if (state.currentPhase === 'bringdown') {
       var nb = document.getElementById('ld-next-btn');
       if (nb) addListener(nb, 'click', handleBringdown);
@@ -403,10 +344,8 @@
       if (input) setTimeout(function () { input.focus(); }, 60);
     }
 
-    // Auto-speak
-    if (state.autoVoice && explanation) {
-      speak(explanation);
-    }
+    // Auto-speak (uses global toggle)
+    window.App.autoSpeak(explanation);
   }
 
   /* ---- Interaction ---- */
@@ -547,7 +486,6 @@
       state.startTime = Date.now();
       state.timers = [];
       state.listeners = [];
-      state.autoVoice = false;
 
       startNewProblem();
     },
