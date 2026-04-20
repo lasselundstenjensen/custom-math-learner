@@ -25,7 +25,8 @@
     container: null,
     timers: [],
     listeners: [],
-    autoVoice: false
+    autoVoice: false,
+    difficulty: 'easy' // 'easy' = 1-digit divisor, 'hard' = 2-digit divisor
   };
 
   function clearTimers() {
@@ -47,42 +48,88 @@
 
   /* ---- TTS ---- */
 
+  var cachedDanishVoice = null;
+
+  function findDanishVoice() {
+    if (cachedDanishVoice) return cachedDanishVoice;
+    var voices = speechSynthesis.getVoices();
+    var candidates = [];
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (v.lang && (v.lang === 'da-DK' || v.lang === 'da_DK' || v.lang === 'da')) {
+        candidates.push(v);
+      }
+    }
+    if (candidates.length === 0) return null;
+    // Prefer a voice whose name contains "Sara" (macOS native Danish) or is marked local
+    for (var j = 0; j < candidates.length; j++) {
+      if (candidates[j].name && candidates[j].name.indexOf('Sara') !== -1) {
+        cachedDanishVoice = candidates[j];
+        return cachedDanishVoice;
+      }
+    }
+    // Prefer localService voices (native, not network-based)
+    for (var k = 0; k < candidates.length; k++) {
+      if (candidates[k].localService) {
+        cachedDanishVoice = candidates[k];
+        return cachedDanishVoice;
+      }
+    }
+    cachedDanishVoice = candidates[0];
+    return cachedDanishVoice;
+  }
+
   function speak(text) {
     if (!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.lang = 'da-DK';
     u.rate = 0.9;
-    // Try to find a Danish voice
-    var voices = speechSynthesis.getVoices();
-    for (var i = 0; i < voices.length; i++) {
-      if (voices[i].lang && voices[i].lang.indexOf('da') === 0) {
-        u.voice = voices[i];
-        break;
-      }
-    }
+    var voice = findDanishVoice();
+    if (voice) u.voice = voice;
     speechSynthesis.speak(u);
   }
 
-  // Preload voices (some browsers need this)
+  // Preload voices (some browsers load them asynchronously)
   if ('speechSynthesis' in window) {
     speechSynthesis.getVoices();
     if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = function () { speechSynthesis.getVoices(); };
+      speechSynthesis.onvoiceschanged = function () {
+        cachedDanishVoice = null; // re-detect after voices load
+        speechSynthesis.getVoices();
+      };
     }
   }
 
   /* ---- Problem generation ---- */
 
+  // difficulty: 'easy' (1-digit divisor, 2-3 digit dividend)
+  //             'hard' (2-digit divisor, 3-4 digit dividend)
   function generateProblem() {
-    var divisor = Math.floor(Math.random() * 4) + 2; // 2-5
-    var numDigits = Math.random() < 0.4 ? 2 : 3;
-    var minFirst = divisor;
-    var firstDigit = Math.floor(Math.random() * (9 - minFirst + 1)) + minFirst;
-    var dividend = firstDigit;
-    for (var i = 1; i < numDigits; i++) {
-      dividend = dividend * 10 + Math.floor(Math.random() * 10);
+    var difficulty = state.difficulty || 'easy';
+
+    var divisor, dividend;
+
+    if (difficulty === 'hard') {
+      // 2-digit divisor (11-25), 3-4 digit dividend
+      divisor = Math.floor(Math.random() * 15) + 11; // 11-25
+      var numDigits = Math.random() < 0.4 ? 3 : 4;
+      // Ensure the dividend is large enough so the quotient has numDigits - 1 or more digits
+      var min = divisor * 2;
+      var max = Math.pow(10, numDigits) - 1;
+      if (min > max) min = Math.pow(10, numDigits - 1);
+      dividend = Math.floor(Math.random() * (max - min + 1)) + min;
+    } else {
+      // 1-digit divisor (2-9), 2-3 digit dividend
+      divisor = Math.floor(Math.random() * 8) + 2; // 2-9
+      var numDigits2 = Math.random() < 0.4 ? 2 : 3;
+      var firstDigit = Math.floor(Math.random() * (9 - divisor + 1)) + divisor;
+      dividend = firstDigit;
+      for (var i = 1; i < numDigits2; i++) {
+        dividend = dividend * 10 + Math.floor(Math.random() * 10);
+      }
     }
+
     return { dividend: dividend, divisor: divisor };
   }
 
@@ -263,9 +310,20 @@
         '</form>';
     }
 
+    // ---- Difficulty toggle ----
+    var diffHtml =
+      '<div class="ld-toolbar">' +
+        '<div class="ld-diff-toggle">' +
+          '<button class="ld-diff-btn' + (state.difficulty === 'easy' ? ' ld-diff-active' : '') + '" data-diff="easy">1-cifret</button>' +
+          '<button class="ld-diff-btn' + (state.difficulty === 'hard' ? ' ld-diff-active' : '') + '" data-diff="hard">2-cifret</button>' +
+        '</div>' +
+        '<button class="ld-skip-btn" id="ld-skip-btn">\u21bb Nyt stykke</button>' +
+      '</div>';
+
     // ---- Full HTML ----
     state.container.innerHTML =
       '<div class="ld-container">' +
+        diffHtml +
         // Paper area
         '<div class="ld-paper-wrap">' +
           '<div class="ld-problem-title">' + state.dividend + ' \u00f7 ' + state.divisor + '</div>' +
@@ -305,6 +363,23 @@
       '</div>';
 
     // ---- Attach listeners ----
+
+    // Difficulty buttons
+    var diffBtns = state.container.querySelectorAll('.ld-diff-btn');
+    diffBtns.forEach(function (btn) {
+      addListener(btn, 'click', function () {
+        var newDiff = btn.getAttribute('data-diff');
+        if (newDiff !== state.difficulty) {
+          state.difficulty = newDiff;
+          startNewProblem();
+        }
+      });
+    });
+
+    // Skip / new problem button
+    var skipBtn = document.getElementById('ld-skip-btn');
+    if (skipBtn) addListener(skipBtn, 'click', startNewProblem);
+
     var voiceBtn = document.getElementById('ld-voice-btn');
     if (voiceBtn) addListener(voiceBtn, 'click', function () { speak(explanation); });
 
