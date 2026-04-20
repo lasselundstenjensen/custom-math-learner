@@ -329,7 +329,13 @@
 
     if (state.currentPhase === 'bringdown') {
       var nb = document.getElementById('ld-next-btn');
-      if (nb) addListener(nb, 'click', handleBringdown);
+      if (nb) {
+        addListener(nb, 'click', handleBringdown);
+        nb.focus();
+        addListener(document, 'keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); handleBringdown(); }
+        });
+      }
     } else if (state.currentPhase === 'done') {
       var newBtn = document.getElementById('ld-new-btn');
       var menuBtn = document.getElementById('ld-menu-btn');
