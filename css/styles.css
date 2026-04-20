@@ -278,6 +278,11 @@ body {
   color: var(--color-white);
 }
 
+/* ---------- Game Top Bar ---------- */
+.game-topbar {
+  margin-bottom: 12px;
+}
+
 /* ---------- Game Screen ---------- */
 .game-screen {
   animation: fadeIn 0.3s ease;
@@ -870,6 +875,309 @@ body {
   .seq-row,
   .seq-labels-row {
     gap: 4px;
+  }
+}
+
+/* ============================================
+   LONG DIVISION
+   ============================================ */
+
+.ld-container {
+  animation: fadeIn 0.4s ease;
+}
+
+.ld-paper-wrap {
+  background: var(--color-card-bg);
+  border-radius: var(--radius);
+  padding: 28px 24px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.ld-problem-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  margin-bottom: 20px;
+}
+
+/* The division layout: divisor on left, main area on right */
+.ld-frame {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.ld-divisor-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 2px;
+}
+
+/* Spacer pushes divisor down to align with dividend row */
+.ld-divisor-spacer {
+  height: 48px; /* matches quotient row height */
+}
+
+.ld-divisor-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+.ld-main-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Quotient row sits above the bracket */
+.ld-quotient-row {
+  display: flex;
+  padding-bottom: 4px;
+  min-height: 48px;
+  align-items: flex-end;
+}
+
+/* Bracket area: left border + top border = the division bracket */
+.ld-bracket-content {
+  border-left: 3px solid var(--color-text);
+  border-top: 3px solid var(--color-text);
+  border-top-left-radius: 8px;
+  padding: 6px 4px 12px 8px;
+}
+
+.ld-dividend-row {
+  display: flex;
+}
+
+.ld-work-area {
+  margin-top: 4px;
+}
+
+.ld-work-row {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.ld-work-line {
+  height: 3px;
+  background: var(--color-text);
+  margin: 3px 0;
+  border-radius: 2px;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ---- Cells ---- */
+.ld-cell {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+/* Quotient variants */
+.ld-q-filled {
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.08);
+  border-radius: 6px;
+  margin: 0 1px;
+}
+
+.ld-q-placeholder {
+  color: var(--color-accent);
+  background: rgba(253, 203, 110, 0.2);
+  border: 2px dashed var(--color-accent);
+  border-radius: 6px;
+  margin: 0 1px;
+  animation: pulse 1.2s ease infinite;
+}
+
+.ld-q-empty {
+  color: transparent;
+  border-bottom: 2px solid rgba(0,0,0,0.1);
+  margin: 0 1px;
+}
+
+/* Dividend variants */
+.ld-d-digit {
+  color: var(--color-text);
+}
+
+.ld-d-highlight {
+  background: rgba(108, 92, 231, 0.12);
+  border-radius: 6px;
+  color: var(--color-primary);
+}
+
+/* Work area variants */
+.ld-w-digit {
+  color: var(--color-text);
+}
+
+.ld-w-subtract {
+  color: var(--color-wrong);
+}
+
+.ld-w-result {
+  color: var(--color-correct);
+  font-weight: 800;
+}
+
+.ld-w-bringdown {
+  color: var(--color-secondary);
+}
+
+.ld-w-empty {
+  color: transparent;
+}
+
+/* Spacer cell (aligns quotient with dividend, skipping divisor column) */
+.ld-spacer-cell {
+  visibility: hidden;
+}
+
+/* ---- Step panel ---- */
+.ld-step-panel {
+  background: var(--color-card-bg);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.ld-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ld-step-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.1);
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.ld-step-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.ld-step-dot {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.06);
+  color: var(--color-text-light);
+}
+
+.ld-step-dot.ld-step-active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.ld-explain-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.06), rgba(0, 206, 201, 0.06));
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+
+.ld-explain-box p {
+  flex: 1;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.ld-speak-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-light);
+  background: var(--color-white);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.ld-speak-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.ld-voice-toggle-row {
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.ld-voice-toggle {
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ld-voice-toggle input {
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.ld-input-box {
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .ld-cell {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .ld-divisor-spacer {
+    height: 40px;
+  }
+
+  .ld-divisor-num {
+    font-size: 1.3rem;
+    height: 36px;
+  }
+
+  .ld-quotient-row {
+    min-height: 40px;
+  }
+
+  .ld-paper-wrap {
+    padding: 18px 12px 14px;
+  }
+
+  .ld-explain-box p {
+    font-size: 0.95rem;
   }
 }
 

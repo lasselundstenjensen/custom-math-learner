@@ -101,7 +101,12 @@ window.App = {
     main.querySelectorAll('.game-card').forEach(function (card) {
       card.addEventListener('click', function () {
         const modeKey = card.getAttribute('data-mode');
-        window.App.showTableSelector(modeKey);
+        const mode = window.GameModes[modeKey];
+        if (mode && mode.skipTableSelector) {
+          window.App.startGame(modeKey, 'mix');
+        } else {
+          window.App.showTableSelector(modeKey);
+        }
       });
       card.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -157,7 +162,21 @@ window.App = {
     window.AppState.currentMode = modeKey;
 
     const main = document.getElementById('main-content');
-    main.innerHTML = '<div class="game-screen" id="game-container"></div>';
+    main.innerHTML =
+      '<div class="game-topbar">' +
+        '<button class="back-btn" id="game-back-btn">&#8592; Tilbage</button>' +
+      '</div>' +
+      '<div class="game-screen" id="game-container"></div>';
+
+    document.getElementById('game-back-btn').addEventListener('click', function () {
+      // Cleanup current game mode
+      const currentMode = window.GameModes[modeKey];
+      if (currentMode && typeof currentMode.cleanup === 'function') {
+        currentMode.cleanup();
+      }
+      window.App.showMenu();
+    });
+
     const container = document.getElementById('game-container');
 
     const questions = this.getQuestions(table, 10);
