@@ -7,6 +7,7 @@
 // --------------- Global State ---------------
 window.AppState = {
   totalStars: 0,
+  totalMistakes: 0,
   selectedTable: null, // number 1-10 or 'mix'
   currentMode: null,   // key string of active game mode
   scores: {}           // per-mode high scores: { modeKey: { best: n, lastPlayed: date } }
@@ -92,6 +93,7 @@ window.App = {
   init() {
     this.loadState();
     this.updateStarDisplay();
+    this.updateMistakeDisplay();
     this.rotateFooterMessage();
     this.showMenu();
   },
@@ -105,6 +107,7 @@ window.App = {
       if (saved) {
         const data = JSON.parse(saved);
         window.AppState.totalStars = data.totalStars || 0;
+        window.AppState.totalMistakes = data.totalMistakes || 0;
         window.AppState.scores = data.scores || {};
       }
     } catch (_) { /* ignore parse errors */ }
@@ -115,6 +118,7 @@ window.App = {
     try {
       localStorage.setItem('gangetabeller_state', JSON.stringify({
         totalStars: window.AppState.totalStars,
+        totalMistakes: window.AppState.totalMistakes,
         scores: window.AppState.scores
       }));
     } catch (_) { /* storage full or disabled */ }
@@ -256,6 +260,7 @@ window.App = {
         window.App.showFeedback(true);
       },
       onWrong: function () {
+        window.App.addMistakes(1);
         window.App.showFeedback(false);
       },
       onComplete: function (stats) {
@@ -295,7 +300,8 @@ window.App = {
     }
 
     // Star display
-    const starsHtml = '⭐'.repeat(correct);
+    const mistakes = total - correct;
+    const starsHtml = '⭐'.repeat(correct) + (mistakes > 0 ? ' ' + '<span class="orange-star">🟠</span>'.repeat(mistakes) : '');
 
     // Save high score
     const modeKey = window.AppState.currentMode;
@@ -332,6 +338,10 @@ window.App = {
           <div class="stat-row">
             <span class="stat-label">Stjerner optjent</span>
             <span class="stat-value">${correct} ⭐</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Fejl</span>
+            <span class="stat-value">${mistakes} <span class="orange-star">🟠</span></span>
           </div>
         </div>
         <div class="result-stars star-burst">${starsHtml}</div>
@@ -372,6 +382,26 @@ window.App = {
     const el = document.getElementById('star-count');
     if (el) {
       el.textContent = window.AppState.totalStars;
+    }
+  },
+
+  /** Add mistake stars and animate the counter */
+  addMistakes(count) {
+    window.AppState.totalMistakes += count;
+    this.updateMistakeDisplay();
+    this.saveState();
+
+    const counter = document.getElementById('mistake-counter');
+    counter.classList.remove('pulse-active');
+    void counter.offsetWidth;
+    counter.classList.add('pulse-active');
+  },
+
+  /** Update the mistake counter display */
+  updateMistakeDisplay() {
+    const el = document.getElementById('mistake-count');
+    if (el) {
+      el.textContent = window.AppState.totalMistakes;
     }
   },
 

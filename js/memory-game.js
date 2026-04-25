@@ -18,6 +18,7 @@
     pairsFound: 0,
     startTime: null,
     locked: false,      // prevent clicking while checking a pair
+    previewing: false,  // true while cards are shown face-up before game starts
     timers: [],
     listeners: []
   };
@@ -100,12 +101,28 @@
         '<span id="mg-pairs">Fundne par: 0 / ' + TOTAL_PAIRS + '</span>' +
       '</div>' +
       '<div id="mg-feedback" style="text-align:center;font-size:1.15rem;font-weight:700;min-height:1.6em;margin-bottom:12px;"></div>' +
-      '<div class="memory-grid" id="mg-grid"></div>';
+      '<div class="memory-grid" id="mg-grid"></div>' +
+      '<div id="mg-start-area" style="text-align:center;margin-top:18px;"></div>';
 
+    // Start in preview mode: show all cards face-up
+    state.previewing = true;
+    state.cards.forEach(function (card) { card.flipped = true; });
     renderCards();
 
+    // Show start button
+    var startArea = document.getElementById('mg-start-area');
+    startArea.innerHTML = '<button class="submit-btn" id="mg-start-btn">Start!</button>';
+    var startBtn = document.getElementById('mg-start-btn');
+    addListener(startBtn, 'click', function () {
+      state.previewing = false;
+      state.cards.forEach(function (card) { card.flipped = false; });
+      startArea.innerHTML = '';
+      state.startTime = Date.now();
+      renderCards();
+    });
+
     // Speak intro
-    window.App.autoSpeak('Hukommelsesspil! Find de matchende par. Tryk p\u00e5 to kort for at vende dem.');
+    window.App.autoSpeak('Hukommelsesspil! Kig godt p\u00e5 kortene. Tryk Start n\u00e5r du er klar!');
   }
 
   function renderCards() {
@@ -185,8 +202,8 @@
   }
 
   function handleCardClick(cardId) {
-    // Guard: locked, already matched, already flipped, or two cards open
-    if (state.locked) return;
+    // Guard: previewing, locked, already matched, already flipped, or two cards open
+    if (state.previewing || state.locked) return;
 
     var card = getCardById(cardId);
     if (!card || card.matched || card.flipped) return;
@@ -287,8 +304,9 @@
       state.flippedCards = [];
       state.attempts = 0;
       state.pairsFound = 0;
-      state.startTime = Date.now();
+      state.startTime = null;
       state.locked = false;
+      state.previewing = false;
       state.timers = [];
       state.listeners = [];
 

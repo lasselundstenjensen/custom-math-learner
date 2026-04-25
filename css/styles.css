@@ -70,6 +70,12 @@ body {
   letter-spacing: 0.5px;
 }
 
+.counters-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .star-counter {
   display: flex;
   align-items: center;
@@ -94,6 +100,19 @@ body {
 .star-count {
   min-width: 24px;
   text-align: center;
+}
+
+.mistake-counter {
+  background: rgba(255, 165, 0, 0.25);
+}
+
+.mistake-star-icon {
+  filter: hue-rotate(-30deg) saturate(2) drop-shadow(0 0 4px rgba(255, 140, 0, 0.6)) !important;
+  color: #ff8c00;
+}
+
+.mistake-counter.pulse-active {
+  animation: pulse 0.5s ease;
 }
 
 /* ---------- Main Content ---------- */
@@ -503,6 +522,10 @@ body {
   font-size: 2rem;
   margin: 16px 0;
   letter-spacing: 4px;
+}
+
+.orange-star {
+  filter: none;
 }
 
 .result-actions {
