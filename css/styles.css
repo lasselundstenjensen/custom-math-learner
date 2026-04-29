@@ -1285,6 +1285,468 @@ body {
   }
 }
 
+/* ============================================
+   BALLOON DIVISION (Ballonmetoden)
+   Stem layout: balloon at top, vertical line,
+   working numbers left, quotient digits right.
+   ============================================ */
+
+.bd-container {
+  animation: fadeIn 0.4s ease;
+}
+
+/* Toolbar */
+.bd-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.bd-diff-toggle {
+  display: flex;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--color-primary-light);
+}
+
+.bd-diff-btn {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  background: var(--color-white);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.bd-diff-btn:first-child {
+  border-right: 2px solid var(--color-primary-light);
+}
+
+.bd-diff-btn.bd-diff-active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.bd-diff-btn:hover:not(.bd-diff-active) {
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.bd-skip-btn {
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 2px solid var(--color-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.bd-skip-btn:hover {
+  background: var(--color-secondary);
+  color: var(--color-white);
+  transform: scale(1.05);
+}
+
+/* Paper area */
+.bd-paper-wrap {
+  background: var(--color-card-bg);
+  border-radius: var(--radius);
+  padding: 28px 24px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+.bd-problem-title {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  margin-bottom: 24px;
+}
+
+.bd-answer {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 24px;
+}
+
+.bd-answer strong {
+  font-size: 1.5rem;
+  color: var(--color-correct);
+}
+
+.bd-answer-rest {
+  color: var(--color-wrong);
+  font-size: 1rem;
+}
+
+/* ---- Balloon visual: the full stem layout ---- */
+.bd-balloon-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The balloon shape (oval) holding the divisor */
+.bd-balloon-shape {
+  width: 64px;
+  height: 72px;
+  border: 3px solid var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.06);
+  position: relative;
+}
+
+/* Small connector from balloon to stem */
+.bd-stem-connector {
+  width: 3px;
+  height: 16px;
+  background: var(--color-text);
+}
+
+/* The stem area containing all rows */
+.bd-stem-area {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 200px;
+}
+
+/* Each row: left number | stem line | right digit */
+.bd-stem-row {
+  display: grid;
+  grid-template-columns: 1fr 3px 1fr;
+  align-items: center;
+  min-height: 48px;
+  animation: fadeIn 0.3s ease;
+}
+
+.bd-stem-row.bd-row-separator {
+  min-height: 6px;
+}
+
+/* The vertical stem line through every row */
+.bd-stem-line {
+  background: var(--color-text);
+  width: 3px;
+  height: 100%;
+  justify-self: center;
+  min-height: 48px;
+}
+
+.bd-row-separator .bd-stem-line {
+  min-height: 6px;
+}
+
+/* Left: working numbers, right-aligned */
+.bd-left-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  color: var(--color-text);
+  text-align: right;
+  padding-right: 14px;
+}
+
+.bd-left-num.bd-current-highlight {
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.08);
+  border-radius: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  animation: pulse 1.5s ease infinite;
+}
+
+/* Underline on left side between rows */
+.bd-row-line-left {
+  height: 3px;
+  background: var(--color-text);
+  margin-left: 20%;
+  border-radius: 2px;
+}
+
+.bd-row-line-right {
+  height: 0;
+}
+
+/* Right: quotient digits, left-aligned */
+.bd-right-digit {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  padding-left: 14px;
+}
+
+.bd-digit-filled {
+  color: var(--color-correct);
+}
+
+.bd-digit-placeholder {
+  color: var(--color-accent);
+  animation: pulse 1.2s ease infinite;
+}
+
+/* Highlighted digit being brought down (in title + annotation) */
+.bd-digit-bring {
+  color: var(--color-secondary);
+  font-weight: 800;
+  background: rgba(0, 206, 201, 0.15);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* Bringdown highlight on the new number */
+.bd-bringdown-highlight {
+  color: var(--color-secondary);
+  background: rgba(0, 206, 201, 0.1);
+  border-radius: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Annotation: remainder calc + bring-down explanation */
+.bd-annotation {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(253, 203, 110, 0.15), rgba(0, 206, 201, 0.1));
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--color-accent);
+  animation: fadeIn 0.3s ease;
+}
+
+.bd-annotation-calc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.bd-anno-step {
+  background: var(--color-white);
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.bd-anno-arrow {
+  color: var(--color-text-light);
+  font-size: 1.1rem;
+}
+
+.bd-annotation-bring {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+/* ---- Step panel ---- */
+.bd-step-panel {
+  background: var(--color-card-bg);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.bd-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bd-step-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.1);
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.bd-progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.bd-progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  transition: var(--transition);
+}
+
+.bd-progress-dot.bd-dot-done {
+  background: var(--color-correct);
+}
+
+.bd-progress-dot.bd-dot-current {
+  background: var(--color-accent);
+  animation: pulse 1.2s ease infinite;
+}
+
+.bd-explain-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.06), rgba(0, 206, 201, 0.06));
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+
+.bd-explain-box p {
+  flex: 1;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.bd-speak-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-light);
+  background: var(--color-white);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.bd-speak-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.bd-input-box {
+  text-align: center;
+}
+
+/* ---- Option buttons (valid multiplier choices) ---- */
+.bd-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.bd-option-btn {
+  width: 52px;
+  height: 52px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border: 3px solid var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bd-option-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-white);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.bd-option-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.bd-option-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.bd-option-btn.bd-option-correct {
+  background: var(--color-correct);
+  color: var(--color-white);
+  border-color: var(--color-correct);
+  transform: scale(1.1);
+}
+
+.bd-option-btn.bd-option-wrong {
+  background: var(--color-wrong);
+  color: var(--color-white);
+  border-color: var(--color-wrong);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .bd-balloon-shape {
+    width: 52px;
+    height: 60px;
+    font-size: 1.3rem;
+  }
+
+  .bd-stem-row {
+    min-height: 40px;
+  }
+
+  .bd-stem-line {
+    min-height: 40px;
+  }
+
+  .bd-row-separator .bd-stem-line {
+    min-height: 6px;
+  }
+
+  .bd-left-num,
+  .bd-right-digit {
+    font-size: 1.2rem;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .bd-paper-wrap {
+    padding: 18px 12px 14px;
+  }
+
+  .bd-explain-box p {
+    font-size: 0.95rem;
+  }
+
+  .bd-option-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+}
+
 /* ---------- Utility ---------- */
 .hidden {
   display: none !important;
