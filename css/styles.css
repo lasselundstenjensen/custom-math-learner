@@ -1705,6 +1705,106 @@ body {
   border-color: var(--color-wrong);
 }
 
+/* ---- Auto-bringdown explanation note ---- */
+.bd-anno-auto {
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* ---- Group brackets (shown in done phase) ---- */
+
+/* When brackets are active, stem rows get 4 columns */
+.bd-stem-brackets .bd-stem-row {
+  grid-template-columns: 1fr 3px 1fr auto;
+}
+
+.bd-group-sum {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  padding-left: 8px;
+  white-space: nowrap;
+  min-width: 40px;
+}
+
+/* Right bracket using border on the right-digit cell */
+.bd-stem-row.bd-group-first .bd-right-digit {
+  border-right: 3px solid var(--color-primary);
+  border-top: 3px solid var(--color-primary);
+  border-top-right-radius: 6px;
+  padding-right: 6px;
+}
+
+.bd-stem-row.bd-group-mid .bd-right-digit {
+  border-right: 3px solid var(--color-primary);
+  padding-right: 6px;
+}
+
+.bd-stem-row.bd-group-last .bd-right-digit {
+  border-right: 3px solid var(--color-primary);
+  border-bottom: 3px solid var(--color-primary);
+  border-bottom-right-radius: 6px;
+  padding-right: 6px;
+}
+
+/* ---- Quotient breakdown (summation at end) ---- */
+.bd-breakdown {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(0, 206, 201, 0.08));
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--color-primary);
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+}
+
+.bd-breakdown-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  margin-bottom: 8px;
+}
+
+.bd-breakdown-parts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+.bd-breakdown-group {
+  color: var(--color-primary);
+  background: rgba(108, 92, 231, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.bd-breakdown-single {
+  color: var(--color-correct);
+  padding: 4px 6px;
+}
+
+.bd-breakdown-zero {
+  color: var(--color-text-light);
+  padding: 4px 6px;
+}
+
+.bd-breakdown-eq {
+  color: var(--color-text);
+  margin-left: 4px;
+}
+
+.bd-breakdown-eq strong {
+  color: var(--color-correct);
+  font-size: 1.3rem;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 600px) {
   .bd-balloon-shape {
@@ -1744,6 +1844,16 @@ body {
     width: 44px;
     height: 44px;
     font-size: 1.1rem;
+  }
+
+  .bd-group-sum {
+    font-size: 0.9rem;
+    padding-left: 4px;
+    min-width: 32px;
+  }
+
+  .bd-breakdown-parts {
+    font-size: 1rem;
   }
 }
 

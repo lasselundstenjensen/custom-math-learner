@@ -84,19 +84,48 @@
     if (state.currentPhase === 'done') {
       var q = state.quotientAcc;
       var r = state.finalRemainder;
+      var doneGroups = computeGroups();
+      var hasMulti = hasMultiRowGroups(doneGroups);
+      var base = 'Fantastisk! ' + state.dividend + ' divideret med ' + state.divisor + ' giver ' + q;
       if (r === 0) {
-        return 'Fantastisk! ' + state.dividend + ' divideret med ' + state.divisor + ' giver ' + q + '. Der er ingen rest!';
+        base += '. Der er ingen rest!';
+      } else {
+        base += ' med rest ' + r + '!';
       }
-      return 'Fantastisk! ' + state.dividend + ' divideret med ' + state.divisor + ' giver ' + q + ' med rest ' + r + '!';
+      if (hasMulti) {
+        var parts = buildQuotientBreakdown(doneGroups);
+        var partStrs = [];
+        for (var pi = 0; pi < parts.length; pi++) {
+          if (parts[pi].multi) {
+            partStrs.push(parts[pi].display);
+          } else {
+            partStrs.push(String(parts[pi].value));
+          }
+        }
+        base += ' Ballonerne samles: ' + partStrs.join(', ') + ' giver ' + q + '.';
+      }
+      return base;
     }
 
     if (state.currentPhase === 'bringdown') {
       var info = state.bringdownInfo;
       var lastRow = state.rows[state.rows.length - 1];
+      var chain = info.chain || [{ digit: info.digit }];
+      var spokenChain = '';
+      var running = info.remainder;
+      for (var ci = 0; ci < chain.length; ci++) {
+        var prevRunning = running;
+        running = running * 10 + chain[ci].digit;
+        if (ci === 0) {
+          spokenChain += 'Vi tager ciffer ' + chain[ci].digit + ' ned og f\u00e5r ' + running;
+        } else {
+          spokenChain += '. ' + prevRunning + ' er mindre end ' + state.divisor +
+            ', s\u00e5 vi tager ogs\u00e5 ' + chain[ci].digit + ' ned og f\u00e5r ' + running;
+        }
+      }
       return lastRow.multiplier + ' gange ' + state.divisor + ' er ' + lastRow.product +
         '. Rest: ' + lastRow.number + ' minus ' + lastRow.product + ' er ' + lastRow.remainder +
-        '. Vi tager n\u00e6ste ciffer (' + info.digit + ') ned til ' + lastRow.remainder +
-        ' og f\u00e5r ' + info.newNumber + '. Tryk N\u00e6ste!';
+        '. ' + spokenChain + '. Tryk N\u00e6ste!';
     }
 
     // divide phase
@@ -126,6 +155,68 @@
     return options;
   }
 
+  /* ---- Group computation for quotient breakdown ---- */
+
+  function computeGroups() {
+    var groups = [];
+    var currentGroup = [];
+    for (var i = 0; i < state.rows.length; i++) {
+      currentGroup.push(state.rows[i]);
+      if (state.rows[i].bringdownAfter || i === state.rows.length - 1) {
+        var mults = [];
+        var sum = 0;
+        for (var j = 0; j < currentGroup.length; j++) {
+          mults.push(currentGroup[j].multiplier);
+          sum += currentGroup[j].multiplier;
+        }
+        groups.push({
+          multipliers: mults,
+          sum: sum,
+          startIdx: i - currentGroup.length + 1,
+          endIdx: i,
+          autoBringdowns: state.rows[i].autoBringdowns || 0
+        });
+        currentGroup = [];
+      }
+    }
+    return groups;
+  }
+
+  function hasMultiRowGroups(groups) {
+    for (var i = 0; i < groups.length; i++) {
+      if (groups[i].multipliers.length > 1) return true;
+    }
+    return false;
+  }
+
+  function buildQuotientBreakdown(groups) {
+    // Build display parts: each group's sum, plus auto-bringdown zeros
+    var parts = [];
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i];
+      if (g.multipliers.length > 1) {
+        parts.push({
+          display: g.multipliers.join(' + ') + ' = ' + g.sum,
+          value: g.sum,
+          multi: true
+        });
+      } else {
+        parts.push({
+          display: String(g.sum),
+          value: g.sum,
+          multi: false
+        });
+      }
+      // Insert 0s for auto-bringdowns (skipped digit positions)
+      if (g.autoBringdowns) {
+        for (var a = 0; a < g.autoBringdowns; a++) {
+          parts.push({ display: '0', value: 0, auto: true });
+        }
+      }
+    }
+    return parts;
+  }
+
   /* ---- Rendering ---- */
 
   function render() {
@@ -135,6 +226,28 @@
 
     // ---- Build the stem rows from completed rows ----
     var rowsHtml = '';
+
+    // In done phase, compute groups for bracket display
+    var groups = (state.currentPhase === 'done') ? computeGroups() : null;
+    var showBrackets = groups && hasMultiRowGroups(groups);
+
+    // Build a lookup: rowIndex -> { position in group, groupSize, groupSum }
+    var rowGroupInfo = {};
+    if (showBrackets && groups) {
+      for (var gi = 0; gi < groups.length; gi++) {
+        var g = groups[gi];
+        if (g.multipliers.length > 1) {
+          for (var ri = g.startIdx; ri <= g.endIdx; ri++) {
+            rowGroupInfo[ri] = {
+              pos: ri === g.startIdx ? 'first' : (ri === g.endIdx ? 'last' : 'mid'),
+              sum: g.sum,
+              isLast: ri === g.endIdx
+            };
+          }
+        }
+      }
+    }
+
     for (var i = 0; i < state.rows.length; i++) {
       var row = state.rows[i];
 
@@ -144,16 +257,33 @@
       // Right: the multiplier chosen
       var rightClass = 'bd-right-digit bd-digit-filled';
 
+      // Add group bracket class if applicable
+      var rowClass = 'bd-stem-row';
+      var rgi = rowGroupInfo[i];
+      if (rgi) {
+        rowClass += ' bd-group-' + rgi.pos;
+      }
+
+      // Group sum label (shown on last row of multi-row group)
+      var sumHtml = '';
+      if (rgi && rgi.isLast) {
+        sumHtml = '<div class="bd-group-sum">= ' + rgi.sum + '</div>';
+      } else if (showBrackets) {
+        sumHtml = '<div class="bd-group-sum"></div>';
+      }
+
       rowsHtml +=
-        '<div class="bd-stem-row">' +
+        '<div class="' + rowClass + '">' +
           '<div class="' + leftClass + '">' + row.number + '</div>' +
           '<div class="bd-stem-line"></div>' +
           '<div class="' + rightClass + '">' + row.multiplier + '</div>' +
+          sumHtml +
         '</div>';
 
       // Underline after rows where a bringdown happened (remainder < divisor)
       if (row.bringdownAfter) {
-        rowsHtml += '<div class="bd-stem-row bd-row-separator"><div class="bd-row-line-left"></div><div class="bd-stem-line"></div><div class="bd-row-line-right"></div></div>';
+        var sepCols = showBrackets ? ' bd-row-separator-wide' : '';
+        rowsHtml += '<div class="bd-stem-row bd-row-separator' + sepCols + '"><div class="bd-row-line-left"></div><div class="bd-stem-line"></div><div class="bd-row-line-right"></div>' + (showBrackets ? '<div></div>' : '') + '</div>';
       }
     }
 
@@ -179,6 +309,20 @@
     if (state.currentPhase === 'bringdown') {
       var lastRow = state.rows[state.rows.length - 1];
       var info = state.bringdownInfo;
+      var chain = info.chain || [{ digit: info.digit }];
+
+      // Build bring-down explanation showing each step in the chain
+      var bringHtml = '';
+      var running = info.remainder;
+      for (var ci = 0; ci < chain.length; ci++) {
+        running = running * 10 + chain[ci].digit;
+        bringHtml += 'Tag <span class="bd-digit-bring">' + chain[ci].digit + '</span> ned \u2192 <strong>' + running + '</strong>';
+        if (ci < chain.length - 1) {
+          // Explain WHY we bring down another digit
+          bringHtml += ' <span class="bd-anno-auto">(' + running + ' &lt; ' + state.divisor + ')</span><br>';
+        }
+      }
+
       annotationHtml =
         '<div class="bd-annotation">' +
           '<div class="bd-annotation-calc">' +
@@ -186,9 +330,7 @@
             '<span class="bd-anno-arrow">\u2192</span>' +
             '<span class="bd-anno-step">' + lastRow.number + ' \u2212 ' + lastRow.product + ' = <strong>' + lastRow.remainder + '</strong></span>' +
           '</div>' +
-          '<div class="bd-annotation-bring">' +
-            'Tag <span class="bd-digit-bring">' + info.digit + '</span> ned \u2192 <strong>' + info.newNumber + '</strong>' +
-          '</div>' +
+          '<div class="bd-annotation-bring">' + bringHtml + '</div>' +
         '</div>';
     }
 
@@ -200,6 +342,27 @@
       answerHtml = '<div class="bd-answer">' + state.dividend + ' : ' + state.divisor + ' = <strong>' + q + '</strong>';
       if (r > 0) answerHtml += ' <span class="bd-answer-rest">rest ' + r + '</span>';
       answerHtml += '</div>';
+
+      // Show quotient breakdown if there are multi-row groups
+      if (showBrackets && groups) {
+        var parts = buildQuotientBreakdown(groups);
+        var breakdownHtml = '<div class="bd-breakdown">';
+        breakdownHtml += '<div class="bd-breakdown-label">Ballonerne samles:</div>';
+        breakdownHtml += '<div class="bd-breakdown-parts">';
+        for (var pi = 0; pi < parts.length; pi++) {
+          var part = parts[pi];
+          if (part.multi) {
+            breakdownHtml += '<span class="bd-breakdown-group">(' + part.display + ')</span>';
+          } else if (part.auto) {
+            breakdownHtml += '<span class="bd-breakdown-zero">' + part.display + '</span>';
+          } else {
+            breakdownHtml += '<span class="bd-breakdown-single">' + part.display + '</span>';
+          }
+        }
+        breakdownHtml += '<span class="bd-breakdown-eq">= <strong>' + q + '</strong></span>';
+        breakdownHtml += '</div></div>';
+        answerHtml += breakdownHtml;
+      }
     }
 
     // ---- Input area ----
@@ -237,12 +400,16 @@
     if (state.currentPhase === 'done') {
       titleHtml = answerHtml;
     } else if (state.currentPhase === 'bringdown') {
-      // Highlight the digit being brought down in the dividend
+      // Highlight ALL digits being brought down (including auto-bringdowns)
       var dividendStr = String(state.dividend);
-      var highlightIdx = state.bringdownInfo.digitIdx;
+      var chain = state.bringdownInfo.chain || [{ digitIdx: state.bringdownInfo.digitIdx }];
+      var highlightSet = {};
+      for (var ci2 = 0; ci2 < chain.length; ci2++) {
+        highlightSet[chain[ci2].digitIdx] = true;
+      }
       var titleDigits = '';
       for (var d = 0; d < dividendStr.length; d++) {
-        if (d === highlightIdx) {
+        if (highlightSet[d]) {
           titleDigits += '<span class="bd-digit-bring">' + dividendStr[d] + '</span>';
         } else {
           titleDigits += dividendStr[d];
@@ -271,7 +438,7 @@
           '<div class="bd-balloon-visual">' +
             '<div class="bd-balloon-shape">' + state.divisor + '</div>' +
             '<div class="bd-stem-connector"></div>' +
-            '<div class="bd-stem-area">' + rowsHtml + '</div>' +
+            '<div class="bd-stem-area' + (showBrackets ? ' bd-stem-brackets' : '') + '">' + rowsHtml + '</div>' +
           '</div>' +
           annotationHtml +
         '</div>' +
@@ -406,11 +573,29 @@
       row.bringdownAfter = true;
       var nextDigit = state.digits[state.nextDigitIdx];
       var newNumber = remainder * 10 + nextDigit;
+
+      // Pre-compute auto-bringdown chain (digits that will be auto-brought-down
+      // because the intermediate number is still < divisor)
+      var chain = [{ digit: nextDigit, digitIdx: state.nextDigitIdx }];
+      var tempNumber = newNumber;
+      var tempIdx = state.nextDigitIdx + 1;
+      var autoBringdowns = 0;
+      while (tempNumber < state.divisor && tempIdx < state.digits.length) {
+        var autoDigit = state.digits[tempIdx];
+        chain.push({ digit: autoDigit, digitIdx: tempIdx });
+        tempNumber = tempNumber * 10 + autoDigit;
+        tempIdx++;
+        autoBringdowns++;
+      }
+
+      row.autoBringdowns = autoBringdowns;
+
       state.bringdownInfo = {
         remainder: remainder,
         digit: nextDigit,
         digitIdx: state.nextDigitIdx,
-        newNumber: newNumber
+        newNumber: tempNumber,  // final number after all auto-bringdowns
+        chain: chain            // all digits brought down (first + auto)
       };
       state.currentPhase = 'bringdown';
     } else {
@@ -425,17 +610,20 @@
 
   function handleBringdown() {
     var info = state.bringdownInfo;
+    var chain = info.chain || [{ digit: info.digit }];
+
+    // Apply all bringdowns from the pre-computed chain
+    // First digit: normal bringdown
     state.quotientAcc *= 10;
-    state.currentNumber = info.newNumber;
     state.nextDigitIdx++;
 
-    // Auto-bring-down if number is still smaller than divisor
-    while (state.currentNumber < state.divisor && state.nextDigitIdx < state.digits.length) {
-      var nextDigit = state.digits[state.nextDigitIdx];
+    // Additional auto-bringdowns (each one inserts a 0 quotient position)
+    for (var ci = 1; ci < chain.length; ci++) {
       state.quotientAcc *= 10;
-      state.currentNumber = state.currentNumber * 10 + nextDigit;
       state.nextDigitIdx++;
     }
+
+    state.currentNumber = info.newNumber;
 
     if (state.currentNumber < state.divisor && state.nextDigitIdx >= state.digits.length) {
       // Can't divide further
